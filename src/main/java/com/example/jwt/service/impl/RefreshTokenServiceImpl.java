@@ -5,6 +5,7 @@ import com.example.jwt.entity.User;
 import com.example.jwt.repository.RefreshTokenRepository;
 import com.example.jwt.repository.UserRepository;
 import com.example.jwt.service.RefreshTokenService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,13 +20,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Value("${security.jwt.refresh-expiration-time}")
     private long refreshExpiration;
 
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final UserRepository userRepository;
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
-    public RefreshTokenServiceImpl(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.userRepository = userRepository;
-    }
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public Optional<RefreshToken> findByToken(String token) {

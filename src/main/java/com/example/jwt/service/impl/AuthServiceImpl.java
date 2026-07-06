@@ -12,6 +12,7 @@ import com.example.jwt.service.AuthService;
 import com.example.jwt.service.JwtService;
 import com.example.jwt.service.RefreshTokenService;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,26 +21,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
-    private final AuthenticationManager authenticationManager;
-    private final ModelMapper modelMapper;
+    @Autowired
+    private UserRepository userRepository;
 
-    public AuthServiceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder,
-                           JwtService jwtService,
-                           RefreshTokenService refreshTokenService,
-                           AuthenticationManager authenticationManager,
-                           ModelMapper modelMapper) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.refreshTokenService = refreshTokenService;
-        this.authenticationManager = authenticationManager;
-        this.modelMapper = modelMapper;
-    }
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public UserDto signup(SignUpRequest signUpRequest) {

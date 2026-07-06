@@ -7,6 +7,7 @@ import com.example.jwt.repository.EmployeeRepository;
 import com.example.jwt.repository.UserRepository;
 import com.example.jwt.service.EmployeeService;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +17,14 @@ import java.util.stream.Collectors;
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
-    private final EmployeeRepository employeeRepository;
-    private final UserRepository userRepository;
-    private final ModelMapper modelMapper;
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, UserRepository userRepository, ModelMapper modelMapper) {
-        this.employeeRepository = employeeRepository;
-        this.userRepository = userRepository;
-        this.modelMapper = modelMapper;
-    }
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public EmployeeDto createEmployee(EmployeeDto employeeDto) {
