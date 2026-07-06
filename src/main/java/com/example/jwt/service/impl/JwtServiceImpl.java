@@ -1,5 +1,6 @@
 package com.example.jwt.service.impl;
 
+import com.example.jwt.entity.User;
 import com.example.jwt.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -36,9 +37,15 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        String subject;
+        if (userDetails instanceof User) {
+            subject = String.valueOf(((User) userDetails).getId());
+        } else {
+            subject = userDetails.getUsername();
+        }
         return Jwts.builder()
                 .claims(extraClaims)
-                .subject(userDetails.getUsername())
+                .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSignInKey())
@@ -47,8 +54,14 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        final String subject = extractUsername(token);
+        String comparisonValue;
+        if (userDetails instanceof User) {
+            comparisonValue = String.valueOf(((User) userDetails).getId());
+        } else {
+            comparisonValue = userDetails.getUsername();
+        }
+        return (subject.equals(comparisonValue)) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {

@@ -11,6 +11,7 @@ import com.example.jwt.repository.UserRepository;
 import com.example.jwt.service.AuthService;
 import com.example.jwt.service.JwtService;
 import com.example.jwt.service.RefreshTokenService;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,17 +25,20 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final AuthenticationManager authenticationManager;
+    private final ModelMapper modelMapper;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            JwtService jwtService,
                            RefreshTokenService refreshTokenService,
-                           AuthenticationManager authenticationManager) {
+                           AuthenticationManager authenticationManager,
+                           ModelMapper modelMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.authenticationManager = authenticationManager;
+        this.modelMapper = modelMapper;
     }
 
     @Override
@@ -43,16 +47,17 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email is already registered!");
         }
 
-        User user = new User();
-        user.setName(signUpRequest.getName());
-        user.setEmail(signUpRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
-        user.setAddress(signUpRequest.getAddress());
-        user.setSalary(signUpRequest.getSalary());
-        user.setRole("ROLE_USER");
+        User user = User.builder()
+                .name(signUpRequest.getName())
+                .email(signUpRequest.getEmail())
+                .password(passwordEncoder.encode(signUpRequest.getPassword()))
+                .address(signUpRequest.getAddress())
+                .salary(signUpRequest.getSalary())
+                .role("ROLE_USER")
+                .build();
 
         User savedUser = userRepository.save(user);
-        return mapToDto(savedUser);
+        return modelMapper.map(savedUser, UserDto.class);
     }
 
     @Override
@@ -68,9 +73,14 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + signInRequest.getEmail()));
 
         String accessToken = jwtService.generateToken(user);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
-        return new TokenResponse(accessToken, refreshToken.getToken(), user.getEmail());
+        return TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .userId(user.getId())
+                .email(user.getEmail())
+                .build();
     }
 
     @Override
@@ -80,20 +90,14 @@ public class AuthServiceImpl implements AuthService {
                 .map(RefreshToken::getUser)
                 .map(user -> {
                     String accessToken = jwtService.generateToken(user);
-                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getEmail());
-                    return new TokenResponse(accessToken, newRefreshToken.getToken(), user.getEmail());
+                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
+                    return TokenResponse.builder()
+                            .accessToken(accessToken)
+                            .refreshToken(newRefreshToken.getToken())
+                            .userId(user.getId())
+                            .email(user.getEmail())
+                            .build();
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
-    }
-
-    private UserDto mapToDto(User user) {
-        UserDto dto = new UserDto();
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setAddress(user.getAddress());
-        dto.setSalary(user.getSalary());
-        dto.setRole(user.getRole());
-        return dto;
     }
 }

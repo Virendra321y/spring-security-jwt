@@ -6,6 +6,7 @@ import com.example.jwt.entity.User;
 import com.example.jwt.repository.EmployeeRepository;
 import com.example.jwt.repository.UserRepository;
 import com.example.jwt.service.EmployeeService;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -17,49 +18,61 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, UserRepository userRepository) {
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, UserRepository userRepository, ModelMapper modelMapper) {
         this.employeeRepository = employeeRepository;
         this.userRepository = userRepository;
+        this.modelMapper = modelMapper;
     }
 
     @Override
     public EmployeeDto createEmployee(EmployeeDto employeeDto) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user;
+        if (principal instanceof User) {
+            user = (User) principal;
+        } else {
+            String name = SecurityContextHolder.getContext().getAuthentication().getName();
+            try {
+                Long userId = Long.parseLong(name);
+                user = userRepository.findById(userId)
+                        .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+            } catch (NumberFormatException e) {
+                user = userRepository.findByEmail(name)
+                        .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+            }
+        }
 
-        Employee employee = new Employee();
-        employee.setName(employeeDto.getName());
-        employee.setEmail(employeeDto.getEmail());
-        employee.setAddress(employeeDto.getAddress());
-        employee.setSalary(employeeDto.getSalary());
+        Employee employee = modelMapper.map(employeeDto, Employee.class);
         employee.setUser(user);
 
         Employee savedEmployee = employeeRepository.save(employee);
 
-        return mapToDto(savedEmployee);
+        return modelMapper.map(savedEmployee, EmployeeDto.class);
     }
 
     @Override
     public List<EmployeeDto> getAllEmployees() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user;
+        if (principal instanceof User) {
+            user = (User) principal;
+        } else {
+            String name = SecurityContextHolder.getContext().getAuthentication().getName();
+            try {
+                Long userId = Long.parseLong(name);
+                user = userRepository.findById(userId)
+                        .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+            } catch (NumberFormatException e) {
+                user = userRepository.findByEmail(name)
+                        .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+            }
+        }
 
         List<Employee> employees = employeeRepository.findByUser(user);
         return employees.stream()
-                .map(this::mapToDto)
+                .map(employee -> modelMapper.map(employee, EmployeeDto.class))
                 .collect(Collectors.toList());
-    }
-
-    private EmployeeDto mapToDto(Employee employee) {
-        EmployeeDto dto = new EmployeeDto();
-        dto.setId(employee.getId());
-        dto.setName(employee.getName());
-        dto.setEmail(employee.getEmail());
-        dto.setAddress(employee.getAddress());
-        dto.setSalary(employee.getSalary());
-        return dto;
     }
 }
