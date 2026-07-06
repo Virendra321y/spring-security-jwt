@@ -69,7 +69,35 @@ Prepare for system design and coding interviews with these standard interview qu
 
 ---
 
-## 4. How to Run & Build
+## 4. JWT Security Risks & Mitigation Q&A (Interception, Theft & Attacks)
+
+### Q1: What happens if an attacker steals a user's Access Token (JWT)? How do we limit the damage?
+> **Answer**:
+> Since JWT authentication is stateless, the server trusts any token with a valid cryptographic signature. If an attacker intercepts a token, they can access resources until the token expires. To limit this damage:
+> 1. **Short Expiration Window**: We set short lifespans on Access Tokens (e.g., 5 to 15 minutes). An attacker only has a very limited time to exploit it.
+> 2. **HTTPS Only (TLS)**: Always enforce HTTPS/TLS so that tokens are encrypted in transit, preventing Man-in-the-Middle (MITM) sniffing on public networks.
+> 3. **Secure Client-Side Storage**: Avoid storing JWTs in `localStorage` or `sessionStorage` because they are vulnerable to Cross-Site Scripting (XSS) attacks. Instead, store them in client-side memory (JavaScript variable state) or HttpOnly cookies.
+
+### Q2: How can we revoke a stolen Access Token before its expiration time?
+> **Answer**:
+> Pure stateless JWTs cannot be revoked. However, in production, we handle revocation using the following strategies:
+> 1. **Redis Blacklist**: When a user logs out or a token is reported stolen, we save the token's hash (or unique `jti` claim) to Redis with a Time-To-Live (TTL) matching the token's remaining expiry. Our `JwtAuthenticationFilter` checks Redis before authorizing the request.
+> 2. **Refresh Token Deletion**: Deleting the user's corresponding `RefreshToken` in the database. Once the stolen Access Token expires, the attacker cannot refresh it, revoking all access.
+
+### Q3: How does our Refresh Token database persistence model defend against theft?
+> **Answer**:
+> 1. **Minimal Exposure**: Unlike access tokens, refresh tokens are not sent with every API call. They are only sent once to the `/api/auth/refresh` endpoint when the access token expires, reducing the window for network interception.
+> 2. **Immediate Revocation**: Since Refresh Tokens are stored in our `refresh_tokens` database table, calling `refreshTokenService.deleteByUserId(userId)` or deleting the record instantly invalidates the user session. The next token refresh request will fail immediately.
+> 3. **Token Rotation**: Each refresh request yields a *new* refresh token and deletes the old one. If the server detects a refresh request using an already-used/deleted refresh token, it indicates a replay attack (token theft), allowing the server to revoke all active tokens for that user immediately.
+
+### Q4: How do we prevent XSS and CSRF token interception?
+> **Answer**:
+> - **XSS Protection**: Prevent attackers from injecting scripts to steal tokens by using strict Content Security Policies (CSP) and sanitizing input. If storing JWTs in cookies, marking them as `HttpOnly` and `Secure` ensures that JavaScript cannot access them.
+> - **CSRF Protection**: If cookies are used to store JWTs, enable Spring Security's CSRF protection using a CSRF token (Double Submit Cookie pattern) and configure cookies with `SameSite=Strict` or `SameSite=Lax` to prevent browsers from forwarding cookies on cross-origin requests.
+
+---
+
+## 5. How to Run & Build
 
 ### Prerequisites
 * Java 17
