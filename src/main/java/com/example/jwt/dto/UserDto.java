@@ -1,40 +1,23 @@
-package com.example.jwt.entity;
+package com.example.jwt.dto;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
-@Entity
-@Table(name = "employees")
-public class Employee {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class UserDto {
     private Long id;
-
     private String name;
     private String email;
     private String address;
     private Double salary;
+    private String role;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    public Employee() {
+    public UserDto() {
     }
 
-    public Employee(Long id, String name, String email, String address, Double salary) {
+    public UserDto(Long id, String name, String email, String address, Double salary, String role) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.address = address;
         this.salary = salary;
+        this.role = role;
     }
 
     public Long getId() {
@@ -77,11 +60,11 @@ public class Employee {
         this.salary = salary;
     }
 
-    public User getUser() {
-        return user;
+    public String getRole() {
+        return role;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setRole(String role) {
+        this.role = role;
     }
 }

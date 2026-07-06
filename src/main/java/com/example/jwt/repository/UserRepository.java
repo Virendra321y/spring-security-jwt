@@ -1,13 +1,13 @@
 package com.example.jwt.repository;
 
-import com.example.jwt.entity.Employee;
 import com.example.jwt.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface EmployeeRepository extends JpaRepository<Employee, Long> {
-    List<Employee> findByUser(User user);
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
 }
